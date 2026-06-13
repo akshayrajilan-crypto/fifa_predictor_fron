@@ -1,0 +1,132 @@
+import { useState, useEffect, useMemo } from 'react'
+import { leaderboardAPI } from '../services/api'
+import { useAuth } from '../context/AuthContext'
+import LoadingSpinner from '../components/LoadingSpinner'
+
+export default function Leaderboard() {
+  const [entries, setEntries] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [search, setSearch] = useState('')
+  const { user } = useAuth()
+
+  useEffect(() => {
+    async function fetchLeaderboard() {
+      try {
+        const res = await leaderboardAPI.get()
+        setEntries(res.data)
+      } catch (err) {
+        console.error(err)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchLeaderboard()
+  }, [])
+
+  const filtered = useMemo(() => {
+    if (!search.trim()) return entries
+    return entries.filter((e) => e.username.toLowerCase().includes(search.toLowerCase()))
+  }, [entries, search])
+
+  if (loading) return <LoadingSpinner text="Loading standings..." />
+
+  const top3 = entries.slice(0, 3)
+  const rest = filtered.slice(top3.length)
+  const podiumOrder = [1, 0, 2] // silver, gold, bronze positions
+
+  return (
+    <div className="space-y-8">
+      <div>
+        <h1 className="font-headline font-bold text-2xl neon-glow-secondary">Leaderboard</h1>
+        <p className="font-label text-sm text-on-surface-variant mt-1">Global rankings</p>
+      </div>
+
+      {/* Podium */}
+      {top3.length >= 3 && (
+        <div className="flex items-end justify-center gap-4 py-8">
+          {podiumOrder.map((idx) => {
+            const entry = top3[idx]
+            const isGold = idx === 0
+            const isSilver = idx === 1
+            const heights = ['h-32', 'h-24', 'h-20']
+            const colors = [
+              'border-primary text-primary bg-primary/10',
+              'border-secondary text-secondary bg-secondary/10',
+              'border-tertiary text-tertiary bg-tertiary/10',
+            ]
+            return (
+              <div key={entry.username} className="flex flex-col items-center">
+                <div className={`w-14 h-14 rounded-full flex items-center justify-center border-2 mb-2 ${colors[idx]}`}>
+                  <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>
+                    {isGold ? 'emoji_events' : 'person'}
+                  </span>
+                </div>
+                <span className="font-label text-xs font-bold mb-1 truncate max-w-[80px]">{entry.username}</span>
+                <span className={`font-headline font-extrabold text-sm ${isGold ? 'neon-glow-primary text-primary' : isSilver ? 'text-secondary' : 'text-tertiary'}`}>
+                  {entry.totalPoints} PTS
+                </span>
+                <div className={`w-20 ${heights[idx]} mt-3 rounded-t-lg ${colors[idx]} border flex items-center justify-center`}>
+                  <span className="font-headline font-extrabold text-2xl opacity-50">{idx + 1}</span>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      )}
+
+      {/* Search */}
+      <div className="relative">
+        <span className="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-on-surface-variant">search</span>
+        <input
+          type="text"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search player..."
+          className="w-full bg-surface-container border border-outline-variant focus:border-secondary focus:ring-0 focus:outline-none text-on-surface font-label pl-10 pr-4 py-3 rounded-lg transition-all"
+        />
+      </div>
+
+      {/* Full List */}
+      <div className="space-y-2">
+        {(search ? filtered : entries).map((entry, idx) => {
+          const rank = entries.indexOf(entry) + 1
+          const isCurrentUser = entry.username === user?.username
+          return (
+            <div
+              key={entry.username}
+              className={`flex items-center justify-between p-4 rounded-xl transition-all ${
+                isCurrentUser
+                  ? 'bg-secondary/10 border border-secondary/30 shadow-[0_0_12px_rgba(0,255,204,0.1)]'
+                  : rank <= 3
+                  ? 'bg-surface-container-highest border border-primary/10'
+                  : 'bg-surface-container border border-outline-variant hover:border-secondary/30'
+              }`}
+            >
+              <div className="flex items-center gap-4">
+                <span className={`font-headline font-extrabold text-sm w-8 ${
+                  isCurrentUser ? 'text-secondary' : rank === 1 ? 'text-primary' : rank <= 3 ? 'text-tertiary' : 'text-on-surface-variant'
+                }`}>
+                  {String(rank).padStart(2, '0')}
+                </span>
+                <div className={`w-9 h-9 rounded-full flex items-center justify-center border ${
+                  isCurrentUser ? 'bg-secondary/20 border-secondary/30' : 'bg-surface-variant border-outline'
+                }`}>
+                  <span className="material-symbols-outlined text-sm" style={{ fontVariationSettings: isCurrentUser ? "'FILL' 1" : "'FILL' 0" }}>person</span>
+                </div>
+                <span className={`font-label text-sm ${isCurrentUser ? 'font-bold text-secondary' : ''}`}>
+                  {entry.username}
+                  {isCurrentUser && <span className="ml-2 text-[10px] text-secondary/60">(YOU)</span>}
+                </span>
+              </div>
+              <span className={`font-headline font-extrabold text-sm ${
+                isCurrentUser ? 'text-secondary neon-glow-secondary' : rank === 1 ? 'text-primary' : 'text-on-surface-variant'
+              }`}>
+                {entry.totalPoints} PTS
+              </span>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}

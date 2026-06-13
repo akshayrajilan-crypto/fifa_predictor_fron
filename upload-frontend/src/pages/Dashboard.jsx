@@ -1,0 +1,241 @@
+import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { matchesAPI, leaderboardAPI, predictionsAPI } from '../services/api'
+import { useAuth } from '../context/AuthContext'
+import LoadingSpinner from '../components/LoadingSpinner'
+
+export default function Dashboard() {
+  const [todayMatches, setTodayMatches] = useState([])
+  const [leaderboard, setLeaderboard] = useState([])
+  const [myPredictions, setMyPredictions] = useState([])
+  const [loading, setLoading] = useState(true)
+  const { user } = useAuth()
+  const navigate = useNavigate()
+
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        const [matchesRes, leaderboardRes, predictionsRes] = await Promise.allSettled([
+          matchesAPI.getToday(),
+          leaderboardAPI.get(),
+          predictionsAPI.getMy(),
+        ])
+        if (matchesRes.status === 'fulfilled') {
+          setTodayMatches(matchesRes.value.data.map(m => ({
+            ...m,
+            team1: m.team1Name,
+            team2: m.team2Name,
+            matchTime: m.matchDateTime,
+          })))
+        }
+        if (leaderboardRes.status === 'fulfilled') setLeaderboard(leaderboardRes.value.data)
+        if (predictionsRes.status === 'fulfilled') setMyPredictions(predictionsRes.value.data)
+      } catch (err) {
+        console.error(err)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchData()
+  }, [])
+
+  if (loading) return <LoadingSpinner text="Syncing neural data..." />
+
+  const totalPoints = leaderboard.find((e) => e.username === user?.username)?.totalPoints || 0
+  const rank = leaderboard.findIndex((e) => e.username === user?.username) + 1
+  const scored = myPredictions.filter((p) => p.pointsEarned > 0).length
+  const accuracy = myPredictions.length > 0 ? Math.round((scored / myPredictions.length) * 100) : 0
+
+  const formatTime = (dateStr) => {
+    if (!dateStr) return ''
+    // Times from backend are ET (UTC-4 in summer). Add offset to get correct IST display.
+    const d = new Date(dateStr + '-04:00')  // treat as EDT
+    return d.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true, timeZone: 'Asia/Kolkata' })
+  }
+
+  return (
+    <div className="grid grid-cols-1 xl:grid-cols-12 gap-8">
+      {/* Left Column */}
+      <div className="xl:col-span-8 space-y-8">
+        {/* Section Header */}
+        <div className="flex justify-between items-end">
+          <div>
+            <h2 className="font-headline font-bold text-2xl text-on-surface neon-glow-secondary">Today's Matches</h2>
+            <p className="font-label text-on-surface-variant text-sm mt-1">FIFA WORLD CUP 2026</p>
+          </div>
+          <button onClick={() => navigate('/fixtures')} className="text-secondary font-label text-xs uppercase tracking-widest hover:underline decoration-secondary underline-offset-4">
+            View All
+          </button>
+        </div>
+
+        {/* Matches Horizontal Scroll */}
+        {todayMatches.length > 0 ? (
+          <div className="flex gap-6 overflow-x-auto scrollbar-hide pb-4 -mx-2 px-2">
+            {todayMatches.map((match) => (
+              <div key={match.id} className="flex-none w-[300px] bg-surface-container rounded-xl p-5 card-glow relative overflow-hidden group">
+                <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-bl from-secondary/10 to-transparent"></div>
+                <div className="flex justify-between items-center mb-5">
+                  <span className={`font-label text-[10px] px-2 py-0.5 rounded border ${
+                    match.status === 'COMPLETED' ? 'bg-on-surface-variant/20 text-on-surface-variant border-outline-variant' :
+                    match.status === 'LIVE' ? 'bg-secondary/20 text-secondary border-secondary/30' :
+                    'bg-tertiary/20 text-tertiary border-tertiary/30'
+                  }`}>
+                    {match.status === 'COMPLETED' ? 'FINAL' : match.status === 'LIVE' ? 'LIVE' : formatTime(match.matchTime)}
+                  </span>
+                  <span className="font-label text-[10px] text-on-surface-variant">{match.group || match.stage}</span>
+                </div>
+                <div className="flex justify-around items-center gap-4 mb-5">
+                  <div className="text-center">
+                    <div className="w-12 h-12 rounded-full bg-surface-variant flex items-center justify-center border border-outline mb-2 overflow-hidden">
+                      {match.team1Flag ? (
+                        <img src={match.team1Flag} alt={match.team1} className="w-10 h-10 object-cover" />
+                      ) : (
+                        <span className="font-headline font-bold text-xs">{match.team1?.substring(0, 3).toUpperCase()}</span>
+                      )}
+                    </div>
+                    <span className="font-headline font-bold text-xs uppercase tracking-wider block truncate max-w-[80px]">{match.team1}</span>
+                  </div>
+                  <div className="text-center">
+                    {match.status === 'COMPLETED' ? (
+                      <span className="text-xl font-headline font-extrabold text-on-surface">{match.team1Score} - {match.team2Score}</span>
+                    ) : (
+                      <span className="text-xl font-headline font-extrabold text-on-surface opacity-30">VS</span>
+                    )}
+                  </div>
+                  <div className="text-center">
+                    <div className="w-12 h-12 rounded-full bg-surface-variant flex items-center justify-center border border-outline mb-2 overflow-hidden">
+                      {match.team2Flag ? (
+                        <img src={match.team2Flag} alt={match.team2} className="w-10 h-10 object-cover" />
+                      ) : (
+                        <span className="font-headline font-bold text-xs">{match.team2?.substring(0, 3).toUpperCase()}</span>
+                      )}
+                    </div>
+                    <span className="font-headline font-bold text-xs uppercase tracking-wider block truncate max-w-[80px]">{match.team2}</span>
+                  </div>
+                </div>
+                {match.status !== 'COMPLETED' ? (
+                  <button
+                    onClick={() => navigate(`/predict/${match.id}`)}
+                    className="w-full py-3 btn-solid-secondary rounded text-xs"
+                  >
+                    PREDICT
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => navigate(`/match-results/${match.id}`)}
+                    className="w-full py-3 border border-outline text-on-surface-variant font-headline font-bold text-xs tracking-widest hover:text-on-surface transition-all rounded"
+                  >
+                    VIEW RESULTS
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="bg-surface-container rounded-xl p-8 card-glow text-center">
+            <span className="material-symbols-outlined text-4xl text-on-surface-variant mb-3 block">sports_soccer</span>
+            <p className="font-label text-sm text-on-surface-variant">No matches scheduled today</p>
+            <button onClick={() => navigate('/fixtures')} className="mt-4 btn-neon-secondary px-6 py-2 rounded">
+              VIEW FIXTURES
+            </button>
+          </div>
+        )}
+
+        {/* Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="bg-surface-container-high rounded-xl p-6 primary-glow-border">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center">
+                <span className="material-symbols-outlined text-primary">monitoring</span>
+              </div>
+              <span className="font-label text-[10px] text-on-surface-variant uppercase">Points</span>
+            </div>
+            <span className="text-4xl font-headline font-extrabold text-on-surface neon-glow-primary">{totalPoints}</span>
+          </div>
+          <div className="bg-surface-container-high rounded-xl p-6 card-glow">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 rounded-lg bg-secondary/20 flex items-center justify-center">
+                <span className="material-symbols-outlined text-secondary">leaderboard</span>
+              </div>
+              <span className="font-label text-[10px] text-on-surface-variant uppercase">Rank</span>
+            </div>
+            <span className="text-4xl font-headline font-extrabold text-secondary neon-glow-secondary">#{rank || '-'}</span>
+          </div>
+          <div className="bg-surface-container-high rounded-xl p-6 border border-tertiary/20">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 rounded-lg bg-tertiary/20 flex items-center justify-center">
+                <span className="material-symbols-outlined text-tertiary">percent</span>
+              </div>
+              <span className="font-label text-[10px] text-on-surface-variant uppercase">Accuracy</span>
+            </div>
+            <span className="text-4xl font-headline font-extrabold text-tertiary neon-glow-tertiary">{accuracy}%</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Right Column - Mini Leaderboard */}
+      <div className="xl:col-span-4 space-y-6">
+        <div className="bg-surface-container rounded-xl p-6 border border-outline-variant">
+          <div className="flex justify-between items-center mb-6">
+            <h3 className="font-headline font-bold text-sm tracking-tight">Leaderboard</h3>
+            <span className="font-label text-[10px] text-on-surface-variant">TOP 5</span>
+          </div>
+          <div className="space-y-3">
+            {leaderboard.slice(0, 5).map((entry, idx) => (
+              <div
+                key={entry.username}
+                className={`flex items-center justify-between p-3 rounded-lg transition-colors ${
+                  entry.username === user?.username
+                    ? 'bg-secondary/10 border border-secondary/30'
+                    : idx === 0
+                    ? 'bg-surface-container-highest border border-primary/20'
+                    : 'bg-surface-container hover:bg-surface-variant'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <span className={`font-headline font-extrabold text-sm ${
+                    entry.username === user?.username ? 'text-secondary' : idx === 0 ? 'text-primary' : 'text-on-surface-variant'
+                  }`}>
+                    {String(idx + 1).padStart(2, '0')}
+                  </span>
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center border ${
+                    entry.username === user?.username ? 'bg-secondary/20 border-secondary/30' : 'bg-surface-variant border-outline'
+                  }`}>
+                    <span className="material-symbols-outlined text-sm">person</span>
+                  </div>
+                  <span className={`font-label text-sm ${entry.username === user?.username ? 'font-bold text-secondary' : ''}`}>
+                    {entry.username}
+                  </span>
+                </div>
+                <span className={`font-headline font-extrabold text-xs ${
+                  entry.username === user?.username ? 'text-secondary neon-glow-secondary' : 'text-on-surface-variant'
+                }`}>
+                  {entry.totalPoints} PTS
+                </span>
+              </div>
+            ))}
+          </div>
+          <button
+            onClick={() => navigate('/leaderboard')}
+            className="w-full mt-6 py-2 text-on-surface-variant font-label text-xs uppercase tracking-widest hover:text-secondary transition-colors"
+          >
+            View Full Leaderboard
+          </button>
+        </div>
+
+        {/* Pro Tip */}
+        <div className="bg-gradient-to-br from-tertiary/20 to-transparent rounded-xl p-6 border border-tertiary/30">
+          <div className="flex gap-4">
+            <span className="material-symbols-outlined text-tertiary text-4xl">tips_and_updates</span>
+            <div>
+              <h4 className="font-headline font-bold text-sm text-tertiary">Scoring Rules</h4>
+              <p className="text-xs text-on-tertiary-container mt-1 leading-relaxed">
+                Exact score: 5 pts. Correct result: 3 pts. Goal scorer bonus: 2 pts each. First scorer: 3 pts.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
