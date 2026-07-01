@@ -123,6 +123,13 @@ export const adminAPI = {
     api.post(`/api/admin/submit-motm?matchId=${matchId}&playerName=${encodeURIComponent(playerName)}`),
   recalculateAllPoints: () =>
     api.post('/api/admin/recalculate-points'),
+  // Goal scorer management
+  fetchGoalScorersFromApi: (matchId) =>
+    api.get(`/api/admin/match-goal-scorers/fetch/${matchId}`),
+  getMatchGoalScorers: (matchId) =>
+    api.get(`/api/admin/match-goal-scorers/${matchId}`),
+  saveMatchGoalScorers: (matchId, scorers) =>
+    api.post(`/api/admin/match-goal-scorers/save/${matchId}`, scorers),
   getUserPredictions: (username) =>
     api.get(`/api/admin/user-predictions/${encodeURIComponent(username)}`),
   updatePredictionPoints: (type, predictionId, points) =>
