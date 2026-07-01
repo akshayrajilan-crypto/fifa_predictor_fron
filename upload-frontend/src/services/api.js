@@ -92,6 +92,10 @@ export const specialPredictionsAPI = {
     api.post(`/api/predictions/world-cup-winner?teamId=${teamId}`),
   predictMotm: (matchId, playerId) =>
     api.post(`/api/predictions/motm?matchId=${matchId}&playerId=${playerId}`),
+  getMyMotm: (matchId) =>
+    api.get(`/api/predictions/motm/my/${matchId}`),
+  getAllMyMotm: () =>
+    api.get('/api/predictions/motm/my-all'),
 }
 
 // ─── Announcements ─────────────────────────────────────

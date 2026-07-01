@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
-import { predictionsAPI, leaderboardAPI } from '../services/api'
+import { predictionsAPI, leaderboardAPI, specialPredictionsAPI } from '../services/api'
 import { useAuth } from '../context/AuthContext'
 import LoadingSpinner from '../components/LoadingSpinner'
 
@@ -43,11 +43,11 @@ export default function MyPredictions() {
         }
         if (tournRes.status === 'fulfilled') setTournamentPreds(tournRes.value.data)
 
-        // Get MOTM predictions from breakdown
-        if (breakdownRes.status === 'fulfilled') {
-          const bd = breakdownRes.value.data
-          if (bd.motmDetails) setMotmPreds(bd.motmDetails)
-        }
+        // Get all MOTM predictions for this user
+        try {
+          const motmRes = await specialPredictionsAPI.getAllMyMotm()
+          if (motmRes.data?.length > 0) setMotmPreds(motmRes.data)
+        } catch (err) { /* no motm data */ }
       } catch (err) {
         console.error(err)
       } finally {
@@ -74,11 +74,11 @@ export default function MyPredictions() {
     return map
   }, [goalScorerPreds])
 
-  // Group MOTM predictions by match name (breakdown returns match as string)
+  // Group MOTM predictions by match name
   const motmByMatch = useMemo(() => {
     const map = {}
     for (const m of motmPreds) {
-      map[m.match] = m
+      map[m.match] = { player: m.playerName, points: m.pointsEarned || 0, scored: m.scored }
     }
     return map
   }, [motmPreds])
