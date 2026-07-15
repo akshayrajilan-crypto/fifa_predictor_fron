@@ -301,25 +301,45 @@ export default function Dashboard() {
       {/* Prize Distribution Feed */}
       <div className="xl:col-span-12 bg-surface-container rounded-2xl overflow-hidden border border-outline-variant/50 shadow-lg">
         <div className="relative">
+          {/* Confetti particles */}
+          <div className="absolute inset-0 pointer-events-none overflow-hidden z-10">
+            {[...Array(20)].map((_, i) => (
+              <div
+                key={i}
+                className="absolute w-2 h-2 rounded-sm animate-confetti"
+                style={{
+                  left: `${Math.random() * 100}%`,
+                  animationDelay: `${Math.random() * 3}s`,
+                  animationDuration: `${2 + Math.random() * 2}s`,
+                  backgroundColor: ['#00ffcc', '#ff2d78', '#ffd700', '#7c4dff', '#00e5ff', '#ff6d00'][i % 6],
+                  transform: `rotate(${Math.random() * 360}deg)`,
+                }}
+              />
+            ))}
+          </div>
           <img
             src="/winners/bivin-france-spain.jpg"
             alt="Prize Distribution - Bivin R"
-            className="w-full h-64 sm:h-72 object-cover object-center"
+            className="w-full h-auto object-cover"
           />
+          {/* Name on top of image */}
+          <div className="absolute top-3 left-3">
+            <span className="font-headline font-extrabold text-lg text-secondary drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">Bivin R</span>
+          </div>
           <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 to-transparent px-4 py-3">
-            <p className="font-headline font-bold text-xs text-white whitespace-nowrap">
-              <span className="material-symbols-outlined text-secondary text-xs align-middle mr-1">emoji_events</span>
-              Prize Awarded! 🎉 France vs Spain — Rs.500 to Bivin R
-            </p>
+            <div className="flex items-center gap-2">
+              <div className="w-10 h-10 rounded-full bg-secondary/30 border-2 border-secondary flex items-center justify-center shrink-0">
+                <span className="material-symbols-outlined text-secondary text-sm">emoji_events</span>
+              </div>
+              <p className="font-headline font-bold text-xs text-white">
+                Prize Awarded! 🎉 France vs Spain — Rs.500 to Bivin R
+              </p>
+              <img src="/winners/france-spain-emoji.png" alt="" className="h-16 object-contain shrink-0" />
+            </div>
           </div>
         </div>
-        <div className="px-4 py-3 bg-surface-container flex items-center gap-3">
-          <img
-            src="/winners/france-spain-emoji.png"
-            alt="France crying, Spain celebrating"
-            className="w-16 h-10 object-contain rounded"
-          />
-          <p className="font-label text-xs text-on-surface-variant flex-1">
+        <div className="px-4 py-3 bg-surface-container">
+          <p className="font-label text-xs text-on-surface-variant">
             🏆 Congratulations to <strong className="text-secondary">Bivin R</strong> for winning the prediction contest!
           </p>
         </div>
