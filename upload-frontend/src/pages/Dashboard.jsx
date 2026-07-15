@@ -304,29 +304,29 @@ export default function Dashboard() {
           <img
             src="/winners/bivin-france-spain.jpg"
             alt="Prize Distribution - Bivin R"
-            className="w-full h-auto object-cover"
+            className="w-full h-48 sm:h-56 object-cover"
           />
-          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-5">
+          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-4">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-secondary/30 border-2 border-secondary flex items-center justify-center">
-                <span className="material-symbols-outlined text-secondary text-sm">emoji_events</span>
+              <div className="w-8 h-8 rounded-full bg-secondary/30 border-2 border-secondary flex items-center justify-center">
+                <span className="material-symbols-outlined text-secondary text-xs">emoji_events</span>
               </div>
               <div>
-                <p className="font-headline font-bold text-sm text-white">Prize Awarded! 🎉</p>
-                <p className="font-label text-xs text-white/80">France vs Spain — Rs.500 to Bivin R</p>
+                <p className="font-headline font-bold text-xs text-white">Prize Awarded! 🎉</p>
+                <p className="font-label text-[10px] text-white/80">France vs Spain — Rs.500 to Bivin R</p>
               </div>
             </div>
           </div>
         </div>
-        <div className="px-5 py-3 bg-surface-container">
-          <p className="font-label text-xs text-on-surface-variant">
-            🏆 Congratulations to <strong className="text-secondary">Bivin R</strong> for winning the prediction contest for France vs Spain!
-          </p>
+        <div className="px-4 py-3 bg-surface-container flex items-center gap-3">
           <img
             src="/winners/france-spain-emoji.png"
             alt="France crying, Spain celebrating"
-            className="w-full max-w-xs mx-auto mt-3 rounded-lg"
+            className="w-16 h-10 object-contain rounded"
           />
+          <p className="font-label text-xs text-on-surface-variant flex-1">
+            🏆 Congratulations to <strong className="text-secondary">Bivin R</strong> for winning the prediction contest!
+          </p>
         </div>
       </div>
 
