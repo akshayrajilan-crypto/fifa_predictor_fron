@@ -322,6 +322,11 @@ export default function Dashboard() {
           <p className="font-label text-xs text-on-surface-variant">
             🏆 Congratulations to <strong className="text-secondary">Bivin R</strong> for winning the prediction contest for France vs Spain!
           </p>
+          <img
+            src="/winners/france-spain-emoji.png"
+            alt="France crying, Spain celebrating"
+            className="w-full max-w-xs mx-auto mt-3 rounded-lg"
+          />
         </div>
       </div>
 
